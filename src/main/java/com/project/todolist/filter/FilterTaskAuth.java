@@ -14,11 +14,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.experimental.var;
 
 @Component
 public class FilterTaskAuth extends OncePerRequestFilter {
-
     @Autowired
     private IUserRepository userRepository;
 
@@ -28,8 +26,7 @@ public class FilterTaskAuth extends OncePerRequestFilter {
 
         var servletPath = request.getServletPath();
 
-        if (servletPath.equals("/tasks/")) {
-
+        if (servletPath.startsWith("/tasks/")) {
             var authorization = request.getHeader("Authorization");
 
             var authEncoded = authorization.substring("Basic".length()).trim();
@@ -42,9 +39,13 @@ public class FilterTaskAuth extends OncePerRequestFilter {
             String username = credentials[0];
             String password = credentials[1];
 
+            System.out.println("Authorization");
+            System.out.println(username);
+            System.out.println(password);
+
             var user = this.userRepository.findByUsername(username);
             if (user == null) {
-                response.sendError(401);
+                response.sendError(401, "Usuário sem autorização");
             } else {
 
                 var passwordVerify = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
@@ -55,9 +56,10 @@ public class FilterTaskAuth extends OncePerRequestFilter {
                     response.sendError(401);
                 }
             }
-        }else {
+        } else {
             filterChain.doFilter(request, response);
         }
 
     }
+
 }
